@@ -77,5 +77,5 @@ for(i in 1:length(years)){ # loop through each year
   output <- rbind(output, 
                   data.frame(year=years[i], 
                              station=temp$GIS_STATION,
-                             d95 = temp$cumulative.cpue <= 0.95))
+                             d95 = temp$cumulative.cpue <= 0.95)) # T if in d95, F if not!
 }
