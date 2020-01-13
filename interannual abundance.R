@@ -1,6 +1,7 @@
 library(tidyverse)
 library(lme4)
 library(nlme)
+library(sp)
 
 # compare cpue for different sex/size categories in 2010, 2017-2019 in EBS & NBS
 
@@ -24,6 +25,28 @@ NBS <- dat %>%
   filter(area=="NBS")
 
 hist(NBS$MALE_31TO60)
+hist(NBS$MALE_31TO60^0.25)
+
+# Fit a model without correlated residuals
+m0 <- gls(MALE_31TO60^0.25 ~ SURVEY_YEAR, data=NBS)
+coordinates(NBS) <- c("LONGITUDE", "LATITUDE") 
+
+# View semi variogram
+for(i in c(2010, 2017, 2019)){
+  select <- NBS$SURVEY_YEAR == i
+  r <- resid(m0)[select]
+  d <- as.vector(dist(coordinates(NBS)[select,]))
+  p <- plot(Variogram(r, d), main = as.character(i))
+  print(p)
+} # Gaussian-ish?
+
+m1.1 <- gls(MALE_31TO60^0.25 ~ SURVEY_YEAR, correlation=corGaus(form=~LATITUDE + LONGITUDE | SURVEY_YEAR, 
+                                                                nugget = T), data=NBS)  
+summary(m1.1)
+m2.1 <- gls(MALE_31TO60^0.25 ~ SURVEY_YEAR, correlation=corGaus(form=~LATITUDE + LONGITUDE | SURVEY_YEAR, 
+                                                                nugget = F), data=NBS) 
+summary(m2.1)
+
 
 # better transform!
 # first question- is this the correct way to nest lat and long in the correlation structure?
@@ -35,3 +58,7 @@ summary(m1)
 summary(m2)
 
 coef(m1); coef(m2)
+
+
+
+AIC(m1.1, m2.1, m1, m2)
