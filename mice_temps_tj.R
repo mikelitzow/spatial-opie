@@ -7,7 +7,6 @@
 library(tidyverse)
 library(magrittr)
 library(mice)
-library(Hmisc)
 
 # define a standrad error function
 stderr <- function(x){sd(x) / sqrt(length(x))}
@@ -54,8 +53,11 @@ diag(pred) <- FALSE # and of course, drop self-correlations - make the diagonal 
 pred
 
 # specify m=100 imputations
-####imp <- mice(data = temp_mat, method = "norm", m=100, predictorMatrix = pred)
-saveRDS(imp, "./data/station_bottom_temp_imputations.RDS")
+#### imp <- mice(data = temp_mat, method = "norm", m=100, predictorMatrix = pred)
+#### saveRDS(imp, "./data/station_bottom_temp_imputations.RDS")
+
+# read in saved imputations
+imp <- readRDS("./data/station_bottom_temp_imputations.RDS")
 
 # generate list of completed matrices
 imp_list <- list()
