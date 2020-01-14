@@ -5,7 +5,7 @@ library(sp)
 
 # compare cpue for different sex/size categories in 2010, 2017-2019 in EBS & NBS
 
-dat <- read.csv("data/opie.data.2.csv")
+dat <- read.csv("data/opie.data.csv")
 head(dat)
 
 # create NBS/EBS code!
