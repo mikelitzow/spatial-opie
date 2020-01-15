@@ -14,7 +14,7 @@ dat <- dat %>%
   filter(SURVEY_YEAR %in% c(2010, 2017, 2018, 2019))
 
 # separate into NBS/EBS
-dat$area <- ifelse(DescTools::IsOdd(dat$CRUISE)==F, "NBS", "EBS")
+dat$area <- as.factor(ifelse(DescTools::IsOdd(dat$CRUISE)==F, "NBS", "EBS"))
 
 # need to add 2018 NBS data, which are coded differently!
 more.dat <- grep("NBS", dat$GIS_STATION)
@@ -81,17 +81,22 @@ AICc(m1, m2, m3, m4)
 
 model.comparison <- data.frame() # to catch the results
 
-area <- c("NBS", "EBS")
+area <- as.factor(c("NBS", "EBS"))
 group <- colnames(dat)[c(14:16,18,19)]
 
 for(a in 1:length(area)) { # loop through each area
-  
+
   # subset data for area of interest
-  temp <- dat %>%
-    filter(area==area[a]) 
+
+  # THIS STEP DOESN'T WORK! NOT SURE WHY??
+  # temp <- dat %>%
+  #   filter(area==area[a]) 
+  
+  # use regular notation instead of dplyr...
+  temp <- dat[dat$area==area[a],] 
   
   for(g in 1:length(group)) { # loop through each group
-    
+
     # set formula for group of interest
     form <- as.formula(paste(group[g], "^0.25 ~ SURVEY_YEAR", sep=""))
     
@@ -105,7 +110,7 @@ for(a in 1:length(area)) { # loop through each area
                                   nugget = F), data=temp)
     
     model.comparison <- rbind(model.comparison,
-                              data.frame(area=areas[a],
+                              data.frame(area=area[a],
                                          group=group[g],
                                          nugget.T.AICc=AICc(m1),
                                          nugget.F.AICc=AICc(m2)))
@@ -122,8 +127,7 @@ abundance.estimates <- data.frame() # make a new object to catch results
 for(a in 1:length(area)) { # loop through each area
   
   # subset data for area of interest
-  temp <- dat %>%
-    filter(area==area[a]) 
+  temp <- dat[dat$area==area[a],] 
   
   for(g in 1:length(group)) { # loop through each group
     
@@ -138,7 +142,7 @@ for(a in 1:length(area)) { # loop through each area
     t <- summary(mod)$tTable
     
     abundance.estimates <- rbind(abundance.estimates,
-                              data.frame(area=areas[a],
+                              data.frame(area=area[a],
                                          group=group[g],
                                          year=c(2010, 2017:2019),
                                          estimate=c(t[1,1], t[1,1]+t[2,1], t[1,1]+t[3,1], t[1,1]+t[4,1]),
@@ -159,7 +163,8 @@ abundance.estimates$year <- as.factor(as.character(abundance.estimates$year))
 
 ggplot(filter(abundance.estimates, sex=="Male"), aes(year, estimate)) +
   geom_bar(stat="identity") +
-  geom_errorbar(aes(ymax=estimate+1.96*se, ymin=estimate-1.96*se), position="dodge", width=0.5) +
+  geom_errorbar(aes(ymax=estimate+1.96*se, ymin=ifelse(estimate-1.96*se > 0, estimate-1.96*se, 0)), 
+                position="dodge", width=0.5) +
   facet_grid(group~area, scales="free") +
   ylab("Fourth-root CPUE")
 
@@ -168,7 +173,8 @@ ggsave("figs/male annual abundance with spatial error.png", width=4, height=6, u
 # and females
 ggplot(filter(abundance.estimates, sex=="Female"), aes(year, estimate)) +
   geom_bar(stat="identity") +
-  geom_errorbar(aes(ymax=estimate+1.96*se, ymin=estimate-1.96*se), position="dodge", width=0.5) +
+  geom_errorbar(aes(ymax=estimate+1.96*se, ymin=ifelse(estimate-1.96*se > 0, estimate-1.96*se, 0)), 
+                position="dodge", width=0.5) +
   facet_grid(group~area, scales="free") +
   ylab("Fourth-root CPUE")
 
@@ -183,8 +189,7 @@ abundance.estimates <- data.frame() # make a new object to catch results
 for(a in 1:length(area)) { # loop through each area
   
   # subset data for area of interest
-  temp <- dat %>%
-    filter(area==area[a]) 
+  temp <- dat[dat$area==area[a],] 
   
   for(g in 1:length(group)) { # loop through each group
     
@@ -192,12 +197,12 @@ for(a in 1:length(area)) { # loop through each area
     form <- as.formula(paste(group[g], "^0.25 ~ SURVEY_YEAR", sep=""))
     
     # fit with nugget
-    mod <- lm(model=form, data=temp)
-    
-    t <- summary(mod)$coefficients
+    mod <- aov(formula=form, data=temp)
+
+    t <- summary.lm(mod)$coefficients
     
     abundance.estimates <- rbind(abundance.estimates,
-                                 data.frame(area=areas[a],
+                                 data.frame(area=area[a],
                                             group=group[g],
                                             year=c(2010, 2017:2019),
                                             estimate=c(t[1,1], t[1,1]+t[2,1], t[1,1]+t[3,1], t[1,1]+t[4,1]),
@@ -218,7 +223,8 @@ abundance.estimates$year <- as.factor(as.character(abundance.estimates$year))
 
 ggplot(filter(abundance.estimates, sex=="Male"), aes(year, estimate)) +
   geom_bar(stat="identity") +
-  geom_errorbar(aes(ymax=estimate+1.96*se, ymin=estimate-1.96*se), position="dodge", width=0.5) +
+  geom_errorbar(aes(ymax=estimate+1.96*se, ymin=ifelse(estimate-1.96*se > 0, estimate-1.96*se, 0)), 
+                position="dodge", width=0.5) +
   facet_grid(group~area, scales="free") +
   ylab("Fourth-root CPUE")
 
@@ -227,8 +233,70 @@ ggsave("figs/male annual abundance NO spatial error.png", width=4, height=6, uni
 # and females
 ggplot(filter(abundance.estimates, sex=="Female"), aes(year, estimate)) +
   geom_bar(stat="identity") +
-  geom_errorbar(aes(ymax=estimate+1.96*se, ymin=estimate-1.96*se), position="dodge", width=0.5) +
+  geom_errorbar(aes(ymax=estimate+1.96*se, ymin=ifelse(estimate-1.96*se > 0, estimate-1.96*se, 0)), 
+                position="dodge", width=0.5) +
   facet_grid(group~area, scales="free") +
   ylab("Fourth-root CPUE")
 
 ggsave("figs/female annual abundance NO spatial error.png", width=4, height=4, units='in')
+
+#######################
+# out of curiosity...compare with spatial models not including a nugget
+abundance.estimates <- data.frame() # make a new object to catch results
+
+for(a in 1:length(area)) { # loop through each area
+  
+  # subset data for area of interest
+  temp <- dat[dat$area==area[a],] 
+  
+  for(g in 1:length(group)) { # loop through each group
+    
+    # set formula for group of interest
+    form <- as.formula(paste(group[g], "^0.25 ~ SURVEY_YEAR", sep=""))
+    
+    # fit with nugget
+    mod <- gls(model=form, 
+               correlation=corGaus(form=~LATITUDE + LONGITUDE | SURVEY_YEAR, 
+                                   nugget = F), data=temp)
+    
+    t <- summary(mod)$tTable
+    
+    abundance.estimates <- rbind(abundance.estimates,
+                                 data.frame(area=area[a],
+                                            group=group[g],
+                                            year=c(2010, 2017:2019),
+                                            estimate=c(t[1,1], t[1,1]+t[2,1], t[1,1]+t[3,1], t[1,1]+t[4,1]),
+                                            se=c(t[1,2], t[2,2], t[3,2], t[4,2]))) 
+    
+  } # close group
+} # close area
+
+abundance.estimates
+
+# plot
+theme_set(theme_bw())
+# set a sex column
+fem <- grep("FEM", abundance.estimates$group)
+abundance.estimates$sex <- "Male"
+abundance.estimates$sex[fem] <- "Female"
+abundance.estimates$year <- as.factor(as.character(abundance.estimates$year))
+
+ggplot(filter(abundance.estimates, sex=="Male"), aes(year, estimate)) +
+  geom_bar(stat="identity") +
+  geom_errorbar(aes(ymax=estimate+1.96*se, ymin=ifelse(estimate-1.96*se > 0, estimate-1.96*se, 0)), 
+                position="dodge", width=0.5) +
+  facet_grid(group~area, scales="free") +
+  ylab("Fourth-root CPUE")
+
+ggsave("figs/male annual abundance with spatial error NO nugget.png", width=4, height=6, units='in')
+
+# and females
+ggplot(filter(abundance.estimates, sex=="Female"), aes(year, estimate)) +
+  geom_bar(stat="identity") +
+  geom_errorbar(aes(ymax=estimate+1.96*se, ymin=ifelse(estimate-1.96*se > 0, estimate-1.96*se, 0)), 
+                position="dodge", width=0.5) +
+  facet_grid(group~area, scales="free") +
+  ylab("Fourth-root CPUE")
+
+ggsave("figs/female annual abundance with spatial error NO nugget.png", width=4, height=4, units='in')
+
