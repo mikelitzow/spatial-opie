@@ -27,13 +27,13 @@ f_boot_ci2 <- function(split){
 # data ----
 
 ## NBS 
-catch_nbs <- read_csv("./data/crab_nbs.csv")
+catch_nbs <- read_csv("./data/nbs_opilio_haul_data.csv")
 haul_nbs <- read_csv("./data/haul_newtimeseries_nbs.csv")
-strata_nbs <- read_csv("./data/strata_nbs_newtimeseries.csv")
+strata_nbs <- read_csv("./data/nbs_opilio_strata.csv")
 
 ## EBS
 catch_ebs <- read_csv("./data/ebs_opilio_haul_data.csv")
-haul_ebs <- read_csv("./data/haul_newtimeseries.csv")
+haul_ebs <- read_csv("./data/haul_newtimeseries_ebs.csv")
 strata_ebs <- read_csv("./data/ebs_opilio_strata.csv")
 
 
